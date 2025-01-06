@@ -34,6 +34,7 @@ After making these changes, you can run the code in the same way as for **MATCH*
 
 ```bash
 python3 -m main.py -a {algorithm} -d {dataset} --cl {classifier}
+```
 
 #### Retraining Experiments
 
