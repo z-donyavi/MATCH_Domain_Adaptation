@@ -11,9 +11,9 @@ In the following, we describe how one can reproduce our results.
 This experiment has been run with Python 3.9.11. We used some packages like ```numpy```, ```pandas```, ```scikit-learn``` and ```cvxpy``` are used in most algorithms.
 
 
-#### Main Experiments
+### Main Experiments
 
-### MATCH
+#### MATCH
 To reproduce all our experiments with all datasets, all of quantifiers (EMQ, GAC, GPACC), and classifiers (LR, LDA, RF, SVM, LGBM, NB, GB), one can simply run our main script via 
 
 ```bash
@@ -22,7 +22,7 @@ To reproduce all our experiments with all datasets, all of quantifiers (EMQ, GAC
 
 where quantifiers and datasets to run on can be specified by their respective names as listed in ```alg_index.csv``` and ```data/data_index.csv```. When none of the arguments are specified, all experiments will be executed. 
 
-### BUR-MAP
+#### BUR-MAP
 To run **BUR-MAP**, follow these steps:
 
 1. Open the `main.py` script.
@@ -35,7 +35,7 @@ After making these changes, you can run the code in the same way as for **MATCH*
 ```bash
 python3 -m main.py -a {algorithm} -d {dataset} --cl {classifier}
 
-##### Retraining Experiments
+#### Retraining Experiments
 
 After completing the main experiments, you can run the retraining_exp.py script. This script processes the raw results to calculate the training and test ratios, which are then used for retraining purposes.
 
