@@ -11,11 +11,6 @@ In the following, we describe how one can reproduce our results.
 This experiment has been run with Python 3.9.11. We used some packages like ```numpy```, ```pandas```, ```scikit-learn``` and ```cvxpy``` are used in most algorithms.
 
 
-##### Loading Datasets
-
-Each dataset has a ```prep.py``` file to prepare. After preparing all datasets, the parameter ```load_from_disk=False``` in line 167 in ```run.py``` can be set to the ```True``` value.
-
-
 #### Main Experiments
 
 ### MATCH
@@ -25,10 +20,24 @@ To reproduce all our experiments with all datasets, all of quantifiers (EMQ, GAC
     python3 -m main.py -a {algorithms} -d {datasets} --cl{classifier}
 ```
 
-where algorithms and datasets to run on can be specified by their respective names as listed in ```alg_index.csv``` and ```data/data_index.csv```. When none of the arguments are specified, all experiments will be executed. 
+where quantifiers and datasets to run on can be specified by their respective names as listed in ```alg_index.csv``` and ```data/data_index.csv```. When none of the arguments are specified, all experiments will be executed. 
 
+### BUR-MAP
+To run **BUR-MAP**, follow these steps:
 
+1. Open the `main.py` script.
+2. Replace the name `MATCH` with `BUR_MAP` at the following lines:
+   - **Line 316**
+   - **Line 363**
 
+After making these changes, you can run the code in the same way as for **MATCH** using the following command:
+
+```bash
+python3 -m main.py -a {algorithm} -d {dataset} --cl {classifier}
+
+##### Retraining Experiments
+
+After completing the main experiments, you can run the retraining_exp.py script. This script processes the raw results to calculate the training and test ratios, which are then used for retraining purposes.
 
 
 
