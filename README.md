@@ -29,6 +29,14 @@ To run **BUR-MAP**, follow these steps:
 2. Replace the name `MATCH` with `BUR_MAP` at the following lines:
    - **Line 316**
    - **Line 363**
+  
+#### MATCH-SOFT
+To run **MATCH-SOFT**, follow these steps:
+
+1. Open the `main.py` script.
+2. Replace the name `MATCH` with `MATCH_SOFT` at the following lines:
+   - **Line 316**
+   - **Line 363**
 
 After making these changes, you can run the code in the same way as for **MATCH** using the following command:
 
