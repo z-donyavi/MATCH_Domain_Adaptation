@@ -208,6 +208,131 @@ def MATCH(X_test, Y_test, test_scores, p_test, p_train, nmodels, nclasses, class
     # acc_re = accuracy_score(Y_test, class_index)
     return acc_re_en, prec_re_en, rec_re_en, F1_re_en, accuracies, precisions, recalls, F1_scores, count_converge
 
+def MATCH_SOFT(X_test, Y_test, test_scores, p_test, p_train, nmodels, nclasses, classifiers):
+    """
+    Solves the classification problem with a soft constraint on class prevalences
+    using an L1 regularization term in the objective function.
+    """
+    lambda_reg=0.1
+    # class_labels = list(range(nclasses))
+    eps = 1e-10
+    num_instances = len(test_scores[0])
+    num_classes = nclasses
+    num_instances_per_class = np.round(num_instances * np.array(p_test)).astype(int)
+    adjusted_priors = np.zeros((nmodels, len(X_test), nclasses))
+    count_converge = 0
+    count_not_converge = 0
+    count_notfeasible = 0
+    count_unbounded = 0
+    
+    for mod in range(nmodels):
+        start_time = time.time()
+        log_p_y__x = np.log(test_scores[mod] + eps)  # Using log-probabilities to avoid underflow
+
+        if sum(num_instances_per_class) != num_instances:  # Adjusting rounding differences
+            largest_class = np.argmax(num_instances_per_class)
+            num_instances_per_class[largest_class] += num_instances - sum(num_instances_per_class)
+    
+        # Defining binary variables in CVXPY
+        a = cp.Variable((num_instances, num_classes), boolean=True)
+    
+        # 2. Define the Penalty Term (L1 Regularization for Prevalence Matching)
+        # Target prevalence vector p_test (as a CVXPY parameter for robustness)
+        target_p = cp.Parameter(num_classes, value=np.array(p_test))
+        
+        # Calculate the assigned proportion for each class: (1/N) * sum(a[:, j])
+        assigned_proportions = cp.sum(a, axis=0) / num_instances
+        
+        # # L1 Penalty: lambda * sum(|assigned_proportions - target_p|)
+        prevalence_penalty = lambda_reg * cp.sum(cp.abs(assigned_proportions - target_p))
+    
+        # 3. Objective: Maximize log-likelihood - Penalty
+        # Maximize sum(a * log_p_y__x) - prevalence_penalty
+        # objective_likelihood = cp.sum(cp.multiply(a, log_p_y__x))
+        objective_likelihood = cp.sum(cp.multiply(a, log_p_y__x)) / num_instances
+        objective = cp.Maximize(objective_likelihood - prevalence_penalty)
+        
+        # 4. Constraints: ONLY each instance must be assigned to one class (Hard Constraint)
+        constraints = [cp.sum(a, axis=1) == 1]
+        
+    
+        # 5. Define and solve the problem
+        problem = cp.Problem(objective, constraints)
+        
+
+        try:
+            # problem.solve(solver=cp.SCIP, verbose=False)
+            problem.solve(verbose=False)
+            print(f"Solver used: {problem.solver_stats.solver_name}")
+        except Exception as e:
+            print(f"Solver failed: {e}")
+            # Handle the case where the solver call itself raises an exception
+            problem.status = "SOLVER_FAILURE"
+
+        print(f"Solver used: {problem.solver_stats.solver_name}")
+        end_time = time.time()
+        opt_time = end_time-start_time
+        
+        
+        # Check the status of the solver
+        if problem.status in [cp.OPTIMAL, cp.OPTIMAL_INACCURATE]:
+            print("The solver has converged to an optimal solution.")
+            count_converge += 1
+        elif problem.status == cp.INFEASIBLE:
+            print("The problem is infeasible.")
+            count_notfeasible +=1
+        elif problem.status == cp.UNBOUNDED:
+            print("The problem is unbounded.")
+            count_unbounded +=1
+        else:
+            print("The solver did not converge to an optimal solution.")
+            print(f"Solver status: {problem.status}")
+            count_not_converge +=1
+        # Extracting the solution
+        adjusted_priors[mod] = np.round(a.value).astype(int)
+    
+    print('Converge:', count_converge)
+    print('Not_converge:', count_not_converge)
+    print('Not_feasible:', count_notfeasible)
+    print('Unbounded:', count_unbounded)    
+    
+    #classification acc with adjusting Esemble
+    predictions_en = np.zeros((len(X_test),nmodels))
+    for mod in range(nmodels):
+        predictions_en[:,mod] = np.argmax(adjusted_priors[mod], axis=1)
+    
+    final_predictions_en, _ = mode(predictions_en, axis=1, keepdims=True)
+    acc_re_en = accuracy_score(Y_test, final_predictions_en)
+    prec_re_en = precision_score(Y_test, final_predictions_en, average='macro')
+    rec_re_en = recall_score(Y_test, final_predictions_en, average='macro')
+    F1_re_en = f1_score(Y_test, final_predictions_en, average='macro')
+
+    classifier_names = {
+    "LR": predictions_en[:,0],
+    "LDA": predictions_en[:,1],
+    "RF": predictions_en[:,2],
+    "SVM": predictions_en[:,3],
+    "LGBM": predictions_en[:,4],
+    "NB": predictions_en[:,5],
+    "GB": predictions_en[:,6],
+    "EN": final_predictions_en
+    }
+
+    accuracies = []
+    precisions = []
+    recalls = []
+    F1_scores = []
+    
+    for cl in classifiers:
+        # Calculate accuracy for the current classifier
+        accuracies.append(accuracy_score(Y_test, classifier_names[cl]))
+        precisions.append(precision_score(Y_test, classifier_names[cl], average='macro'))
+        recalls.append(recall_score(Y_test, classifier_names[cl], average='macro'))
+        F1_scores.append(f1_score(Y_test, classifier_names[cl], average='macro'))
+        
+    # class_index = np.argmax(adjusted_test_scores, axis=1)
+    # acc_re = accuracy_score(Y_test, class_index)
+    return acc_re_en, prec_re_en, rec_re_en, F1_re_en, accuracies, precisions, recalls, F1_scores, count_converge
 
 def to_str(var):
     if type(var) is list:
